@@ -4,6 +4,8 @@ import (
 	"image/color"
 	"math"
 
+	"fmt"
+
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
@@ -11,11 +13,13 @@ import (
 
 const A = -math.Pi
 const B = math.Pi
-const w = 0.5
+const w = 1
 
-//const A = 1
-//const B = 4
-//const w = 0.5
+func Comp1(f, g func(float64) float64) func(float64) float64 {
+	return func(x float64) float64 {
+		return f(x) - g(x)
+	}
+}
 
 func Comp2(f, g func(float64) float64) func(float64) float64 {
 	return func(x float64) float64 {
@@ -31,17 +35,21 @@ func Comp3(f, g, k func(float64) float64) func(float64) float64 {
 
 func Int(f func(float64) float64, a, b float64, n int) float64 {
 	var sum float64
-	h := b - a/float64(n)
-	for i := 0; i <= n; i++ {
-		rectangle := h * F(a+float64(i)/h)
+	h := (b - a) / float64(n)
+	for i := 0; i <= n-1; i++ {
+		rectangle := h * F(a+float64(i)*h)
 		sum += rectangle
 	}
 	return sum
 }
 
+func f(x float64) float64 {
+	k := math.Pow(math.Pi, 2)
+	return math.Cos(w * k)
+}
+
 func F(x float64) float64 {
 	t := (2*x - (B + A)) / (B - A)
-	//return 2.*math.Pow(t, 2) + math.Sin(w*t)
 	k := math.Pow(math.Pi*t, 2)
 	return math.Cos(w * k)
 }
@@ -66,8 +74,8 @@ func App(count, n int) func(float64) float64 {
 			}
 		}
 		res := 0.
-		for i := 0; i < len(C); i++ {
-			res += C[i] * math.Pow(value, float64(i))
+		for i := 0; i < len(C); i = i + 2 {
+			res += C[i] * math.Cos(float64(i)*math.Acos(value/math.Pi))
 		}
 		return res
 	}
@@ -87,14 +95,6 @@ func App(count, n int) func(float64) float64 {
 //		}
 //		return res
 //	}
-//}
-
-//func TTT(value float64) float64 {
-//	res := 0.
-//	for i := 0; i < 4; i++ {
-//		res += 31.9 * math.Pow(value, float64(i))
-//	}
-//	return res
 //}
 
 func main() {
@@ -130,4 +130,7 @@ func main() {
 		panic(err.Error())
 
 	}
+
+	er := math.Pow(Int(Comp2(Comp1(f, f1), Comp1(f, f1)), A, B, 10000), 1/2)
+	fmt.Printf("%v\n", er)
 }
