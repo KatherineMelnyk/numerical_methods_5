@@ -1,10 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"image/color"
 	"math"
-
-	"fmt"
 
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
@@ -15,122 +14,119 @@ const A = -math.Pi
 const B = math.Pi
 const w = 1
 
-func Comp1(f, g func(float64) float64) func(float64) float64 {
-	return func(x float64) float64 {
-		return f(x) - g(x)
-	}
-}
-
-func Comp2(f, g func(float64) float64) func(float64) float64 {
+func MulOf2(f, g func(float64) float64) func(float64) float64 {
 	return func(x float64) float64 {
 		return f(x) * g(x)
 	}
 }
 
-func Comp3(f, g, k func(float64) float64) func(float64) float64 {
+func MulOf3(f, g, k func(float64) float64) func(float64) float64 {
 	return func(x float64) float64 {
 		return f(x) * g(x) * k(x)
 	}
 }
 
-func Int(f func(float64) float64, a, b float64, n int) float64 {
-	var sum float64
-	h := (b - a) / float64(n)
-	for i := 0; i <= n-1; i++ {
-		rectangle := h * F(a+float64(i)*h)
-		sum += rectangle
+func RectangleMethod(f func(float64) float64, a, b float64, n int) float64 {
+	sum := 0.
+	weight := (b - a) / float64(n)
+	for i := 0; i < n; i++ {
+		sum += weight * f(a+float64(i)*weight)
 	}
 	return sum
 }
 
-func f(x float64) float64 {
-	k := math.Pow(math.Pi, 2)
-	return math.Cos(w * k)
+func Func(x float64) float64 {
+	return math.Cos(w * math.Pow(x, 2))
 }
 
-func F(x float64) float64 {
-	t := (2*x - (B + A)) / (B - A)
-	k := math.Pow(math.Pi*t, 2)
-	return math.Cos(w * k)
+func MyFunc(x float64) float64 {
+	t := ((B-A)/2)*x + (B+A)/2
+	return math.Cos(w * math.Pow(t, 2))
 }
 
-func rho(x float64) float64 {
-	g := math.Pow(x, 2)
-	return math.Sqrt(1 - g)
+func weightCoef(x float64) float64 {
+	return 1. / (math.Sqrt(1 - math.Pow(x, 2)))
 }
 
-func App(count, n int) func(float64) float64 {
+func PolinomCheb(count, n int) func(float64) float64 {
+	coef := TestMethod(count, n)
+
 	return func(value float64) float64 {
-		C := make([]float64, count)
-		for i := 0; i < count; i++ {
-			if i == 0 {
-				C[i] = Int(Comp2(F, rho), A, B, n)
-			} else if i%2 == 0 {
-				C[i] = Int(Comp3(
-					func(x float64) float64 {
-						t := (2*x - float64(B+A)) / float64(B-A)
-						return math.Cos(float64(i) * math.Acos(t))
-					}, F, rho), A, B, n)
+		fmt.Println(value)
+		res := 0.
+		for i, ci := range coef {
+			fmt.Println(i)
+			if i%2 == 0 {
+				res += ci * math.Cos(float64(i)*math.Acos((value-(B+A)/2)*(2/(B-A))))
 			}
 		}
-		res := 0.
-		for i := 0; i < len(C); i = i + 2 {
-			res += C[i] * math.Cos(float64(i)*math.Acos(value/math.Pi))
-		}
+		fmt.Println(res)
 		return res
 	}
 }
 
-//func App2(count, n int) func(float64) float64 {
-//	return func(value float64) float64 {
-//		C := make([]float64, count)
-//		for i := 0; i < count; i++ {
-//			C[i] = Int(Comp2(F, func(x float64) float64 {
-//				return math.Pow(math.E, float64(i)*x)
-//			}), A, B, n)
-//		}
-//		res := 0.
-//		for i := 0; i < len(C); i++ {
-//			res += C[i] * math.Pow(value, float64(i))
-//		}
-//		return res
-//	}
-//}
+func TestMethod(count, n int) []float64 {
+	coef := make([]float64, count)
+
+	for i := range coef {
+		ii := RectangleMethod(func(t float64) float64 {
+			return MyFunc(math.Cos(t)) * math.Cos(float64(i)*t)
+		}, 0, math.Pi, n)
+
+		if i == 0 {
+			coef[i] = ii / math.Pi
+		} else if i%2 == 0 {
+			coef[i] = 2 * ii / math.Pi
+		}
+	}
+
+	return coef
+}
 
 func main() {
-	fPol3 := plotter.NewFunction(F)
-	fPol3.Color = color.RGBA{R: 209, G: 15, B: 15, A: 200}
-	fPol3.Width = vg.Inch / 20
-	fPol3.Samples = 200
-	f1 := App(4, 5000)
-	fPol1 := plotter.NewFunction(f1)
-	fPol1.Color = color.RGBA{R: 223, G: 78, B: 90, A: 100}
-	fPol1.Width = vg.Inch / 20
-	fPol1.Samples = 200
+	a := TestMethod(4, 5000)
+	for i := 0; i < len(a); i++ {
+		fmt.Printf("%f\n", a[i])
+	}
+
+	ImageFunc := plotter.NewFunction(Func)
+	ImageFunc.Color = color.RGBA{R: 209, G: 15, B: 15, A: 200}
+	ImageFunc.Width = vg.Inch / 20
+	ImageFunc.Samples = 100
+	aprFun := PolinomCheb(4, 5000)
+
+	fmt.Println(aprFun(-0.1), aprFun(1))
+	fmt.Println(Func(-0.1), Func(1))
+
+	AprFun := plotter.NewFunction(aprFun)
+	AprFun.Color = color.RGBA{R: 223, G: 78, B: 90, A: 100}
+	AprFun.Width = vg.Inch / 20
+	AprFun.Samples = 100
 	//f2 := App2(4, 5000)
 	//fPol2 := plotter.NewFunction(f2)
 	//fPol2.Color = color.RGBA{R: 23, G: 108, B: 200, A: 150}
 	//fPol2.Width = vg.Inch / 20
 	//fPol2.Samples = 200
 	pl, _ := plot.New()
-	pl.X.Min, pl.X.Max = A+1, B+4
-	pl.Y.Min, pl.Y.Max = -5, 35
-	pl.Add(fPol1)
-	pl.Add(fPol3)
+	pl.X.Min, pl.X.Max = A, B
+	pl.Y.Min, pl.Y.Max = -math.Pi, math.Pi
+	pl.Add(AprFun)
+	pl.Add(ImageFunc)
 	//pl.Add(fPol2)
 	pl.Title.Text = "Approximation"
 	pl.Title.Font.Size = vg.Inch
 	pl.Legend.Font.Size = vg.Inch / 2
 	pl.Legend.XOffs = -vg.Inch
 	pl.Legend.YOffs = vg.Inch / 2
-	pl.Legend.Add("Pol1", fPol1)
+	//pl.Legend.Add("Pol1", fPol1)
 	//pl.Legend.Add("Pol2", fPol2)
-	pl.Legend.Add("Pol3", fPol3)
+	//pl.Legend.Add("Pol3", fPol3)
+
 	if err := pl.Save(14*vg.Inch, 14*vg.Inch, "pol.png"); err != nil {
 		panic(err.Error())
 
 	}
+	//er := math.Pow(Int(Comp2(Comp1(f, f1), Comp1(f, f1)), A, B, 10000), 1/2)
+	//fmt.Printf("%v\n", er)
 
-	er := math.Pow(Int(Comp2(Comp1(f, f1), Comp1(f, f1)), A, B, 10000), 1/2)
-	fmt.Printf("%v\n", er)
 }
