@@ -60,22 +60,6 @@ func Mult(count int, x []float64, y []float64) ([]float64, []float64) {
 	return coeficients, vector
 }
 
-//func App2(count, n int) func(float64) float64 {
-//	return func(value float64) float64 {
-//		C := make([]float64, count)
-//		for i := 0; i < count; i++ {
-//			C[i] = Int(Comp2(F, func(x float64) float64 {
-//				return math.Pow(math.E, float64(i)*x)
-//			}), A, B, n)
-//		}
-//		res := 0.
-//		for i := 0; i < len(C); i++ {
-//			res += C[i] * math.Pow(value, float64(i))
-//		}
-//		return res
-//	}
-//}
-
 //x := []float64{0., 0.2, 0.4, 0.6, 0.8, 1.}
 //y := []float64{0.2857, 0.165, 0.0468, -0.0721, -0.1938, -0.3171}
 //K, L := Mult(1, x, y)
