@@ -20,7 +20,7 @@ func dataPoint(f func(float64) float64, x []float64) []float64 {
 	return y
 }
 
-func Mult(count int, x []float64, y []float64) ([]float64, []float64) {
+func Mult(count int, x []float64, y []float64) ([][]float64, []float64) {
 
 	var matrix [][]float64
 	for i := 0; i <= count; i++ {
@@ -29,41 +29,27 @@ func Mult(count int, x []float64, y []float64) ([]float64, []float64) {
 			matrix[i] = append(matrix[i], 0.)
 		}
 	}
-
-	var vector, coeficients []float64
-	for i := 0; i <= count; i++ {
-		vector = append(vector, 0.)
-	}
-	for t := 0; t <= count*3; t++ {
-		coeficients = append(coeficients, 0.)
-	}
+	vector := make([]float64, count+1)
 
 	for i := 0; i <= count; i++ {
 		for j := 0; j <= count; j++ {
 			for k := 0; k < len(x); k++ {
 				matrix[i][j] += math.Pow(x[k], float64(j)) * math.Pow(x[k], float64(i))
 			}
-			matrix[i][j] /= 6
 		}
 		for t := 0; t < len(x); t++ {
 			vector[i] += y[t] * math.Pow(x[t], float64(i))
 		}
-		vector[i] /= 6
 	}
-	index := 0
-	for i := 0; i < len(matrix); i++ {
-		for j := 0; j < len(matrix); j++ {
-			coeficients[index] = matrix[i][j]
-			index++
-		}
-	}
-	return coeficients, vector
+	return matrix, vector
 }
 
-//x := []float64{0., 0.2, 0.4, 0.6, 0.8, 1.}
-//y := []float64{0.2857, 0.165, 0.0468, -0.0721, -0.1938, -0.3171}
-//K, L := Mult(1, x, y)
-//N := mat.NewDense(2, 2, K)
-//M := mat.NewDense(2, 1, L)
-//var c mat.Dense
-//c.Solve(N, M)
+func PolinomApr(v []float64) func(float64) float64 {
+	return func(value float64) float64 {
+		res := 0.
+		for i := 0; i < len(v); i++ {
+			res += v[i] * math.Pow(value, float64(i))
+		}
+		return res
+	}
+}
