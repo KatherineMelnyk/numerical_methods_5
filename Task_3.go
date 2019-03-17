@@ -1,10 +1,16 @@
 package main
 
+import (
+	"math"
+
+	"gonum.org/v1/gonum/mat"
+)
+
 func sequenceOfX(N int) []float64 {
-	sequence := make([]float64, N)
-	h := (B - A) / float64(N)
-	for i := 0; i < N; i++ {
-		sequence[i] = A + h*float64(i)
+	sequence := make([]float64, N+1)
+	h := (math.Pi - 0.) / float64(N)
+	for i := 0; i < len(sequence); i++ {
+		sequence[i] = 0 + h*float64(i)
 	}
 	return sequence
 }
@@ -17,28 +23,21 @@ func sequenceOfY(x []float64) []float64 {
 	return sequence
 }
 
-func matrix(c, r int) [][]float64 {
-	var matrix [][]float64
-	for i := 0; i < r; i++ {
-		matrix = append(matrix, []float64{})
-		for j := 0; j < c; j++ {
-			matrix[i] = append(matrix[i], 0.)
-		}
-	}
-	return matrix
-}
-
 func Amatrix(N int) [][]float64 {
-	h := (B - A) / float64(N)
+	h := (B - 0.) / float64(N)
 	a := matrix(N-1, N-1)
 	for i := 0; i < N-1; i++ {
 		for j := 0; j < N-1; j++ {
 			if i == j {
+				if i == 0 {
+					a[i][j+1] = 1 / h
+				} else if i == N-2 {
+					a[i][j-1] = 1 / h
+				} else {
+					a[i][j-1] = 1 / h
+					a[i][j+1] = 1 / h
+				}
 				a[i][j] = (2 * h) / 3
-			} else if i+1 == j || j+1 == i {
-				a[i][j] = h / 6
-			} else {
-				a[i][j] = 0
 			}
 		}
 	}
@@ -46,16 +45,14 @@ func Amatrix(N int) [][]float64 {
 }
 
 func Hmatrix(N int) [][]float64 {
-	h := (B - A) / float64(N)
+	h := (B - 0) / float64(N)
 	H := matrix(N+1, N-1)
-	for i := 0; i < N+1; i++ {
-		for j := 0; j < N-1; j++ {
-			if i == j || i+2 == j {
-				H[i][j] = 1 / h
-			} else if i+1 == j {
+	for i := 0; i < N-1; i++ {
+		for j := 0; j < N+1; j++ {
+			if i+1 == j {
 				H[i][j] = (-1) * (2 / h)
-			} else {
-				H[i][j] = 0
+				H[i][j-1] = 1 / h
+				H[i][j+1] = 1 / h
 			}
 		}
 	}
@@ -63,9 +60,9 @@ func Hmatrix(N int) [][]float64 {
 }
 
 func P(N int) [][]float64 {
-	P := matrix(N, N)
-	for i := 0; i < N; i++ {
-		for j := 0; j < N; j++ {
+	P := matrix(N+1, N+1)
+	for i := 0; i < N+1; i++ {
+		for j := 0; j < N+1; j++ {
 			if i == j {
 				P[i][j] = 1
 			}
@@ -74,28 +71,87 @@ func P(N int) [][]float64 {
 	return P
 }
 
-//func cefM(N int) {
-//	S := sequenceOfX(N)
-//	Y := sequenceOfY(S)
-//	MatrixP := P(N)
-//	MatrixA := Amatrix(N)
-//	MatrixH := Hmatrix(N)
-//
-//	vectorP := FromMattoVec(MatrixP)
-//	vectorA := FromMattoVec(MatrixA)
-//	vectorH := FromMattoVec(MatrixH)
-//
-//	F := mat.NewDense(len(Y), 1, Y)
-//	P := mat.NewDense(len(MatrixP), len(MatrixP[0]), vectorP)
-//	A := mat.NewDense(len(MatrixA), len(MatrixA), vectorA)
-//	H := mat.NewDense(len(MatrixH), len(MatrixH), vectorH)
-//	TransponseH := H.T()
-//	InverseP := mat.NewDense(len(MatrixP), len(MatrixP), nil)
-//	InverseP.Inverse(P)
-//
-//	Mul := mat.NewDense(N-1, N-1, nil)
-//	Mul.Product(H, InverseP, TransponseH)
-//	Add := mat.NewDense(N-1, N-1, nil)
-//	Add.Add(Mul, A)
-//	addF := mat.NewDense()
-//}
+func m(N int) []float64 {
+
+	X := sequenceOfX(N)
+	Y := sequenceOfY(X)
+	MatA := Amatrix(N)
+	MatH := Hmatrix(N)
+	MAtP := P(N)
+
+	vecH := FromMattoVec(MatH)
+	vecA := FromMattoVec(MatA)
+	vecP := FromMattoVec(MAtP)
+
+	F := mat.NewDense(len(Y), 1, Y)
+	H := mat.NewDense(len(MatH), len(MatH[0]), vecH)
+	P := mat.NewDense(len(MAtP), len(MAtP[0]), vecP)
+	A := mat.NewDense(len(MatA), len(MatA[0]), vecA)
+
+	Right := mat.NewDense(N-1, 1, nil)
+	Right.Product(H, F)
+
+	InvP := mat.NewDense(len(MAtP), len(MAtP), nil)
+	InvP.Inverse(P)
+
+	Mul := mat.NewDense(N-1, N-1, nil)
+	Mul.Product(H, InvP, H.T())
+
+	Left := mat.NewDense(N-1, N-1, nil)
+	Left.Add(Mul, A)
+
+	var Res mat.Dense
+	Res.Solve(Left, Right)
+	m := make([]float64, N-1)
+	for i := 0; i < len(m); i++ {
+		m[i] = Res.RawRowView(i)[0]
+	}
+	return m
+}
+
+func mu(m []float64) []float64 {
+	N := len(m)
+
+	X := sequenceOfX(N)
+	Y := sequenceOfY(X)
+	MatH := Hmatrix(N)
+	MAtP := P(N)
+
+	vecH := FromMattoVec(MatH)
+	vecP := FromMattoVec(MAtP)
+
+	F := mat.NewDense(len(Y), 1, Y)
+	M := mat.NewDense(len(m), 1, m)
+	H := mat.NewDense(len(MatH), len(MatH[0]), vecH)
+	P := mat.NewDense(len(MAtP), len(MAtP[0]), vecP)
+
+	InvP := mat.NewDense(len(MAtP), len(MAtP), nil)
+	InvP.Inverse(P)
+
+	Mul := mat.NewDense(len(Y), 1, nil)
+	Mul.Product(InvP, H.T(), M)
+
+	var Res mat.Dense
+	Res.Sub(F, Mul)
+
+	r := make([]float64, len(Y))
+	for i := 0; i < len(r); i++ {
+		r[i] = Res.RawRowView(i)[0]
+	}
+	return m
+}
+
+func seqS(m, mu []float64, N int) []func(float64) float64 {
+	h := B / float64(N)
+	X := sequenceOfX(N)
+	S := make([]func(float64) float64, N)
+	for i := 0; i < N-1; i++ {
+		S[i] = func(x float64) float64 {
+			return m[i]*math.Pow(X[i+1]-x, 3)/6*h +
+				m[i+1]*math.Pow(x-X[i], 3)/6*h +
+				(mu[i]-m[i]*math.Pow(h, 2)/6)*(3-X[i+1])/h +
+				(mu[i+1] - m[i+1]*math.Pow(h, 2)/6)
+		}
+	}
+	return S
+}

@@ -36,14 +36,6 @@ func RectangleMethod(f func(float64) float64, a, b float64, n int) float64 {
 	return sum
 }
 
-func t1(x float64) float64 {
-	return math.Pow(x, 2)
-}
-
-func t2(x float64) float64 {
-	return 2 * math.Pow(x, 2)
-}
-
 func Func(x float64) float64 {
 	return math.Cos(w * math.Pow(x, 2))
 }
@@ -51,10 +43,6 @@ func Func(x float64) float64 {
 func MyFunc(x float64) float64 {
 	t := ((B-A)/2)*x + (B+A)/2
 	return math.Cos(w * math.Pow(t, 2))
-}
-
-func weightCoef(x float64) float64 {
-	return 1. / (math.Sqrt(1 - math.Pow(x, 2)))
 }
 
 func PolinomCheb(count, n int) func(float64) float64 {
@@ -119,35 +107,6 @@ func matrix_of_scalar_mults(count, n int) ([][]float64, []float64) {
 	return matrix, vector
 }
 
-func print_matrix(matrix [][]float64) {
-	for i := 0; i < len(matrix); i++ {
-		for j := 0; j < len(matrix[i]); j++ {
-			fmt.Printf("%f ", matrix[i][j])
-		}
-		fmt.Print("\n")
-	}
-}
-
-func print_vector(vector []float64) {
-	for j := 0; j < len(vector); j++ {
-		fmt.Printf("%f ", vector[j])
-	}
-	fmt.Print("\n")
-}
-
-func FromMattoVec(matrix [][]float64) []float64 {
-	Size := len(matrix) * len(matrix)
-	vector := make([]float64, Size)
-	t := 0
-	for i := 0; i < len(matrix); i++ {
-		for j := 0; j < len(matrix[i]); j++ {
-			vector[t] = matrix[i][j]
-			t = t + 1
-		}
-	}
-	return vector
-}
-
 func SolutionSystem(Vec, v []float64) []float64 {
 	ScalarProd := mat.NewDense(len(v), len(v), Vec)
 	ScalProdF := mat.NewDense(len(v), 1, v)
@@ -170,18 +129,6 @@ func Another(coef []float64) func(float64) float64 {
 	}
 }
 
-func rho_m(x, y []float64, f func(float64) float64) float64 {
-	n0 := 12
-	m0 := 5
-	sum := 0.
-	for i := 0; i < len(x); i++ {
-		sum += math.Pow(f(x[i])-y[i], 2)
-		//fmt.Printf("Polinom value : %f\n", f(x[i]))
-		//fmt.Printf("Polinom value : %f\n", y[i])
-	}
-	return math.Sqrt(sum / float64(n0-m0))
-}
-
 func main() {
 	ImageFunc := plotter.NewFunction(Func)
 	ImageFunc.Color = color.RGBA{R: 209, G: 15, B: 15, A: 200}
@@ -194,9 +141,9 @@ func main() {
 	AprFun.Width = vg.Inch / 20
 	AprFun.Samples = 100
 
-	fmt.Println(aprFun(-0.1), aprFun(1))
-	fmt.Println(Func(-0.1), Func(1))
-	fmt.Print("\n")
+	//fmt.Println(aprFun(-0.1), aprFun(1))
+	//fmt.Println(Func(-0.1), Func(1))
+	//fmt.Print("\n")
 
 	C, v := matrix_of_scalar_mults(15, 7000)
 	result := SolutionSystem(FromMattoVec(C), v)
@@ -206,27 +153,9 @@ func main() {
 	AprFun2.Width = vg.Inch / 20
 	AprFun2.Samples = 100
 
-	fmt.Println(ExpSys(-0.1), ExpSys(1))
-	fmt.Println(Func(-0.1), Func(1))
-	fmt.Print("\n")
-
-	x := []float64{0, 0.1, 0.4, 0.5, math.Pi / 2, 2, 2.5, 2.56, 2.9, math.Pi}//зроби рівновіддалені вузли
-	y := []float64{Func(0), Func(0.1), Func(0.4), Func(0.5), Func(math.Pi / 2), Func(2), Func(2.5), Func(2.56), Func(2.9), Func(math.Pi)}
-
-	for i := 3; i < 15; i++ {
-		Ki, Li := Mult(i, x, y)
-		ci := SolutionSystem(FromMattoVec(Ki), Li)
-		Tablei := PolinomApr(ci)
-		fmt.Printf("Rho_m (m=%v) : %f\n", i, rho_m(x, y, Tablei))
-	}
-
-	K, L := Mult(12, x, y)
-	c := SolutionSystem(FromMattoVec(K), L)
-	Table := PolinomApr(c)
-	AprFun3 := plotter.NewFunction(Table)
-	AprFun3.Color = color.RGBA{R: 50, G: 88, B: 123, A: 111}
-	AprFun3.Width = vg.Inch / 20
-	AprFun3.Samples = 100
+	//fmt.Println(ExpSys(-0.1), ExpSys(1))
+	//fmt.Println(Func(-0.1), Func(1))
+	//fmt.Print("\n")
 
 	pl, _ := plot.New()
 	pl.X.Min, pl.X.Max = 0, B
@@ -245,26 +174,9 @@ func main() {
 	pl.Legend.Add("Aproximation by polinom Chebeshov", AprFun)
 	pl.Legend.Add("Aproximation by e^ix", AprFun2)
 
-	pl2, _ := plot.New()
-	pl2.X.Min, pl2.X.Max = 0, B
-	pl2.Y.Min, pl2.Y.Max = -1, 1
-
-	pl2.Add(ImageFunc)
-	pl2.Add(AprFun3)
-
-	pl2.Title.Text = "Approximation"
-	pl2.Title.Font.Size = vg.Inch
-	pl2.Legend.Font.Size = vg.Inch / 2
-	pl2.Legend.XOffs = -vg.Inch
-	pl2.Legend.YOffs = vg.Inch / 2
-	pl2.Legend.Add("Function", ImageFunc)
-	pl2.Legend.Add("Aproximation by Table", AprFun3)
+	//graphicSec()
 
 	if err := pl.Save(14*vg.Inch, 14*vg.Inch, "Task1.png"); err != nil {
-		panic(err.Error())
-	}
-
-	if err := pl2.Save(14*vg.Inch, 14*vg.Inch, "Task2.png"); err != nil {
 		panic(err.Error())
 	}
 
@@ -276,7 +188,5 @@ func main() {
 	er2 := math.Sqrt(RectangleMethod(MulOf2(f2, f2), 0, B, 5000))
 	fmt.Printf("Error of aproximation func by system E^ix %v\n", er2)
 
-	f3 := Diverse(Func, Table)
-	er3 := math.Sqrt(RectangleMethod(MulOf2(f3, f3), 0, B, 5000))
-	fmt.Printf("Error of aproximation func by Table %v\n", er3)
+	print_vector(m(3))
 }
